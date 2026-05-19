@@ -1,20 +1,12 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-// --- FUNÇÕES DE MÁSCARA ---
 const mascaraData = (valor) => {
-  return valor
-    .replace(/\D/g, '') // Remove tudo que não for número
-    .replace(/(\d{2})(\d)/, '$1/$2') // Coloca a primeira barra
-    .replace(/(\d{2})(\d)/, '$1/$2') // Coloca a segunda barra
-    .slice(0, 10); // Limita a 10 caracteres (DD/MM/AAAA)
+  return valor.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 10);
 };
 
 const mascaraHora = (valor) => {
-  return valor
-    .replace(/\D/g, '') // Remove o que não é número
-    .replace(/(\d{2})(\d)/, '$1:$2') // Coloca os dois pontos
-    .slice(0, 5); // Limita a 5 caracteres (HH:MM)
+  return valor.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1:$2').slice(0, 5);
 };
 
 function App() {
@@ -24,10 +16,8 @@ function App() {
   const [dataFim, setDataFim] = useState('');
   const [diasDados, setDiasDados] = useState([]);
 
-  // useEffect para calcular os dias quando o usuário digitar as duas datas completas (10 caracteres)
   useEffect(() => {
     if (dataInicio.length === 10 && dataFim.length === 10) {
-      // Separa o texto DD/MM/AAAA para criar um objeto Date nativo
       const [diaI, mesI, anoI] = dataInicio.split('/');
       const [diaF, mesF, anoF] = dataFim.split('/');
 
@@ -43,16 +33,16 @@ function App() {
       let dataAtual = new Date(inicio);
 
       while (dataAtual <= fim) {
-        // Formata garantindo o zero na frente (ex: 05 ao invés de 5)
         const diaStr = String(dataAtual.getDate()).padStart(2, '0');
         const mesStr = String(dataAtual.getMonth() + 1).padStart(2, '0');
         const anoStr = dataAtual.getFullYear();
 
         listaDias.push({
           data: `${diaStr}/${mesStr}/${anoStr}`,
-          horaInicio: '08:00', // Padrão inicial em 24h
+          horaInicio: '08:00',
           horaFim: '17:00',
-          atividades: ''
+          // A MUDANÇA ESTÁ AQUI: Agora cada atividade é um objeto com texto e fotos próprios
+          atividades: [{ texto: '', imagens: [] }]
         });
         
         dataAtual.setDate(dataAtual.getDate() + 1);
@@ -64,37 +54,65 @@ function App() {
 
   const handleDiaChange = (index, campo, valor) => {
     const novosDias = [...diasDados];
-    // Se for campo de hora, aplica a máscara. Se for texto, salva normal.
-    if (campo === 'horaInicio' || campo === 'horaFim') {
-      novosDias[index][campo] = mascaraHora(valor);
-    } else {
-      novosDias[index][campo] = valor;
+    novosDias[index][campo] = campo.includes('hora') ? mascaraHora(valor) : valor;
+    setDiasDados(novosDias);
+  };
+
+  const handleAtividadeChange = (indexDia, indexAtividade, valor) => {
+    const novosDias = [...diasDados];
+    novosDias[indexDia].atividades[indexAtividade].texto = valor;
+    setDiasDados(novosDias);
+  };
+
+  const addNovaAtividade = (indexDia) => {
+    const novosDias = [...diasDados];
+    novosDias[indexDia].atividades.push({ texto: '', imagens: [] });
+    setDiasDados(novosDias);
+  };
+
+  const removerAtividade = (indexDia, indexAtividade) => {
+    const novosDias = [...diasDados];
+    if (novosDias[indexDia].atividades.length > 1) {
+      novosDias[indexDia].atividades.splice(indexAtividade, 1);
+      setDiasDados(novosDias);
     }
+  };
+
+  // UPLOAD DA IMAGEM AGORA VINCULADO AO ITEM
+  const handleImageUpload = (indexDia, indexAtividade, event) => {
+    const files = Array.from(event.target.files);
+    
+    Promise.all(files.map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    })).then(base64Images => {
+      const novosDias = [...diasDados];
+      novosDias[indexDia].atividades[indexAtividade].imagens.push(...base64Images);
+      setDiasDados(novosDias);
+    });
+  };
+
+  // FUNÇÃO PARA REMOVER UMA FOTO ESPECÍFICA
+  const removerImagem = (indexDia, indexAtividade, indexImagem) => {
+    const novosDias = [...diasDados];
+    novosDias[indexDia].atividades[indexAtividade].imagens.splice(indexImagem, 1);
     setDiasDados(novosDias);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Agora o payload já vai mastigado com os formatos exatos para o Node
-    const payload = {
-      cliente,
-      servico,
-      dataInicio, // Já está DD/MM/AAAA
-      dataFim,    // Já está DD/MM/AAAA
-      dias: diasDados,
-      tipoLayout: 'residencial'
-    };
-
+    const payload = { cliente, servico, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
       const response = await fetch('http://localhost:3001/api/gerar-rdo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       if (!response.ok) throw new Error('Falha ao gerar o arquivo');
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -105,7 +123,6 @@ function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erro:', error);
       alert('Erro ao gerar o PDF. Verifique o servidor.');
     }
   };
@@ -116,79 +133,77 @@ function App() {
       <p className="subtitle">Preenchimento Dinâmico por Período</p>
 
       <form onSubmit={handleSubmit} className="rdo-form">
-        <div className="form-group">
-          <label>Cliente:</label>
-          <input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required />
-        </div>
-
-        <div className="form-group">
-          <label>Descrição do Serviço:</label>
-          <input type="text" value={servico} onChange={(e) => setServico(e.target.value)} required />
-        </div>
+        <div className="form-group"><label>Cliente / Projeto:</label><input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required /></div>
+        <div className="form-group"><label>Serviço Principal:</label><input type="text" value={servico} onChange={(e) => setServico(e.target.value)} required /></div>
 
         <div style={{ display: 'flex', gap: '20px' }}>
-          <div className="form-group" style={{ flex: 1 }}>
-            <label>Data de Início:</label>
-            <input 
-              type="text" 
-              placeholder="DD/MM/AAAA"
-              value={dataInicio} 
-              onChange={(e) => setDataInicio(mascaraData(e.target.value))} 
-              required 
-            />
-          </div>
-          <div className="form-group" style={{ flex: 1 }}>
-            <label>Data de Fim:</label>
-            <input 
-              type="text" 
-              placeholder="DD/MM/AAAA"
-              value={dataFim} 
-              onChange={(e) => setDataFim(mascaraData(e.target.value))} 
-              required 
-            />
-          </div>
+          <div className="form-group" style={{ flex: 1 }}><label>Data de Início:</label><input type="text" placeholder="DD/MM/AAAA" value={dataInicio} onChange={(e) => setDataInicio(mascaraData(e.target.value))} required /></div>
+          <div className="form-group" style={{ flex: 1 }}><label>Data de Fim:</label><input type="text" placeholder="DD/MM/AAAA" value={dataFim} onChange={(e) => setDataFim(mascaraData(e.target.value))} required /></div>
         </div>
 
         {diasDados.length > 0 && (
           <div className="bloco-dias-container">
-            <h3>Detalhamento Diário ({diasDados.length} dias correspondentes)</h3>
+            <h3>Detalhamento Diário</h3>
             
-            {diasDados.map((dia, index) => (
-              <div key={index} className="dia-box" style={{ border: '1px solid #e2e8f0', padding: '15px', borderRadius: '6px', marginBottom: '15px', backgroundColor: '#f8fafc' }}>
-                <h4>📅 Dia: {dia.data}</h4>
+            {diasDados.map((dia, indexDia) => (
+              <div key={indexDia} className="dia-box" style={{ border: '1px solid #e2e8f0', padding: '15px', borderRadius: '6px', marginBottom: '15px', backgroundColor: '#f8fafc' }}>
+                <h4 style={{ margin: '0 0 15px 0' }}>📅 Dia: {dia.data}</h4>
                 
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '10px' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label>Hora Entrada (24h):</label>
-                    <input 
-                      type="text" 
-                      placeholder="HH:MM"
-                      value={dia.horaInicio} 
-                      onChange={(e) => handleDiaChange(index, 'horaInicio', e.target.value)} 
-                      required 
-                    />
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label>Hora Saída (24h):</label>
-                    <input 
-                      type="text" 
-                      placeholder="HH:MM"
-                      value={dia.horaFim} 
-                      onChange={(e) => handleDiaChange(index, 'horaFim', e.target.value)} 
-                      required 
-                    />
-                  </div>
+                  <div className="form-group" style={{ flex: 1 }}><label>Hora Entrada:</label><input type="text" placeholder="HH:MM" value={dia.horaInicio} onChange={(e) => handleDiaChange(indexDia, 'horaInicio', e.target.value)} required /></div>
+                  <div className="form-group" style={{ flex: 1 }}><label>Hora Saída:</label><input type="text" placeholder="HH:MM" value={dia.horaFim} onChange={(e) => handleDiaChange(indexDia, 'horaFim', e.target.value)} required /></div>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: '15px' }}>
                   <label>Atividades deste dia:</label>
-                  <textarea 
-                    value={dia.atividades} 
-                    onChange={(e) => handleDiaChange(index, 'atividades', e.target.value)} 
-                    placeholder="O que foi feito especificamente nesta data?"
-                    rows="3" 
-                    required 
-                  />
+                  
+                  {dia.atividades.map((ativ, indexAtiv) => (
+                    <div key={indexAtiv} style={{ marginBottom: '20px', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', backgroundColor: '#ffffff' }}>
+                      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                        <span style={{ padding: '10px', backgroundColor: '#e2e8f0', borderRadius: '6px 0 0 6px', fontWeight: 'bold' }}>
+                          {indexAtiv + 1}.
+                        </span>
+                        
+                        <textarea 
+                          style={{ flex: 1, borderRadius: dia.atividades.length > 1 ? '0' : '0 6px 6px 0', border: '1px solid #cbd5e1', borderLeft: 'none', borderRight: dia.atividades.length > 1 ? 'none' : '1px solid #cbd5e1', padding: '10px', resize: 'vertical', minHeight: '60px', fontFamily: 'inherit', fontSize: '16px', outline: 'none' }}
+                          value={ativ.texto} 
+                          onChange={(e) => handleAtividadeChange(indexDia, indexAtiv, e.target.value)} 
+                          placeholder="Descreva a atividade..."
+                          rows="2" required 
+                        />
+
+                        {dia.atividades.length > 1 && (
+                          <button type="button" onClick={() => removerAtividade(indexDia, indexAtiv)} style={{ padding: '0 15px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '0 6px 6px 0', cursor: 'pointer', fontWeight: 'bold' }}>X</button>
+                        )}
+                      </div>
+
+                      {/* CAIXA DE UPLOAD ESPECÍFICA PARA ESTE ITEM */}
+                      <div style={{ marginTop: '10px', paddingLeft: '45px' }}>
+                        <label style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', display: 'inline-block', backgroundColor: '#f1f5f9', padding: '5px 10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                          📷 Anexar Foto a este item
+                          <input type="file" accept="image/*" multiple onChange={(e) => handleImageUpload(indexDia, indexAtiv, e)} style={{ display: 'none' }} />
+                        </label>
+                        
+                        {/* PREVIEW E BOTÃO REMOVER IMAGEM */}
+                        {ativ.imagens.length > 0 && (
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                            {ativ.imagens.map((img, i) => (
+                              <div key={i} style={{ position: 'relative', width: '60px', height: '60px' }}>
+                                <img src={img} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid #ccc' }} />
+                                <button type="button" onClick={() => removerImagem(indexDia, indexAtiv, i)} style={{ position: 'absolute', top: '-5px', right: '-5px', width: '20px', height: '20px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                  X
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <button type="button" onClick={() => addNovaAtividade(indexDia)} style={{ alignSelf: 'flex-start', padding: '6px 12px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: 'none', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
+                    + Adicionar outro item
+                  </button>
                 </div>
               </div>
             ))}

@@ -1,24 +1,25 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
-const PDFDocument = require('pdfkit');
 
-// Importando o padrão Strategy
+// RETORNAMOS PARA O PDFKIT PADRÃO (Sem tabelas fantasmas que criam páginas)
+const PDFDocument = require('pdfkit'); 
+
 const RdoContext = require('./context/RdoContext');
 const ResidentialRdoStrategy = require('./strategies/ResidentialRdoStrategy');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
 
-// Mapeamento das estratégias disponíveis
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 const estrategiasDisponiveis = {
   'residencial': new ResidentialRdoStrategy()
 };
 
-app.post('/api/gerar-rdo', (req, res) => {
+app.post('/api/gerar-rdo', async (req, res) => {
   const dadosRDO = req.body;
-  // Pegamos o tipo de layout enviado pelo Front. Se não enviar, usa 'residencial' como padrão
   const tipoLayout = dadosRDO.tipoLayout || 'residencial'; 
 
   try {
@@ -29,31 +30,29 @@ app.post('/api/gerar-rdo', (req, res) => {
       return res.status(400).json({ error: "Tipo de RDO não suportado." });
     }
 
-    // Configura a estratégia no contexto
     rdoContext.setStrategy(estrategiaEscolhida);
 
-    // Inicializa o arquivo PDF em branco
-    const doc = new PDFDocument({ margin: 50 });
+    // Inicializa o PDFKit padrão com margens zeradas para controlarmos os blocos na margem
+    // Inicializa o PDFKit zerando as margens invisíveis para termos 100% de controle
+    // Inicializa o PDFKit com margens seguras e a "Máquina do Tempo" ativada
+    const doc = new PDFDocument({ 
+      size: 'A4', 
+      margins: { top: 100, bottom: 90, left: 50, right: 50 },
+      bufferPages: true 
+    });
 
-    // Configura os headers HTTP para o navegador entender que é um download de arquivo
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=RDO_${tipoLayout}.pdf`);
-
-    // Faz o "pipe" (conecta o fluxo do PDF direto na resposta HTTP)
+    res.setHeader('Content-Disposition', `attachment; filename=RDO_${dadosRDO.cliente.replace(/\s+/g, '_')}.pdf`);
     doc.pipe(res);
 
-    // Delega a escrita do PDF para a nossa Strategy
-    rdoContext.gerarDocumento(doc, dadosRDO);
+    await rdoContext.gerarDocumento(doc, dadosRDO);
 
-    // Finaliza e envia o PDF
     doc.end();
 
   } catch (error) {
-    console.error("Erro ao processar a Strategy:", error);
+    console.error("Erro:", error);
     res.status(500).json({ error: "Erro interno ao gerar o PDF." });
   }
 });
 
-app.listen(3001, () => {
-  console.log("🚀 Servidor Node rodando com sucesso na porta 3001");
-});
+app.listen(3001, () => console.log("🚀 Servidor Node rodando na porta 3001"));

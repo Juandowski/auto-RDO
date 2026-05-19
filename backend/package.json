@@ -13,7 +13,8 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "pdfkit": "^0.18.0"
+    "pdfkit": "^0.18.0",
+    "pdfkit-table": "^0.2.11"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
