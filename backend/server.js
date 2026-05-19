@@ -56,4 +56,7 @@ app.post('/api/gerar-rdo', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+app.get('/', (req, res) => {
+  res.send('O servidor RDO está online!');
+});
 app.listen(PORT, () => console.log(`🚀 Servidor Rodando na porta ${PORT}`));
