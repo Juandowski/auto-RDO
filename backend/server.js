@@ -55,4 +55,5 @@ app.post('/api/gerar-rdo', async (req, res) => {
   }
 });
 
-app.listen(3001, () => console.log("🚀 Servidor Node rodando na porta 3001"));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`🚀 Servidor Rodando na porta ${PORT}`));
