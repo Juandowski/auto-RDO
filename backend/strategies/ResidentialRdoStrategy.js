@@ -1,4 +1,6 @@
 // backend/strategies/ResidentialRdoStrategy.js
+const fs = require('fs');
+const path = require('path');
 
 class ResidentialRdoStrategy {
   async execute(doc, dados) {
@@ -13,38 +15,53 @@ class ResidentialRdoStrategy {
       doc.moveTo(180, y).lineTo(180, y + 50).stroke();
       doc.moveTo(400, y).lineTo(400, y + 50).stroke();
       
+      // --- LOGO DA EMERSON ---
+      // Procura a imagem dentro da pasta 'backend/assets/'
+      const logoPath = path.join(__dirname, '../assets/logo.png'); 
+      
+      if (fs.existsSync(logoPath)) {
+        // Encaixa a imagem perfeitamente dentro da primeira caixa (com folga de borda)
+        doc.image(logoPath, margin + 5, y + 5, { fit: [120, 40], align: 'center', valign: 'center' });
+      } else {
+        // Se a imagem não estiver na pasta, não quebra o sistema e deixa um aviso
+        doc.font('Helvetica').fontSize(8).fillColor('#999999').text("Adicione logo.png na pasta assets", margin + 5, y + 20, { width: 120, align: 'center' });
+      }
+
       doc.font('Helvetica-Bold').fontSize(14).fillColor('#000000').text("RELATÓRIO DIÁRIO DE OBRA", 180, y + 15, { width: 220, align: 'center' });
       doc.fontSize(12).text("(RDO)", 180, y + 30, { width: 220, align: 'center' });
       doc.fontSize(9).text(`Início: ${dados.dataInicio}`, 405, y + 12);
       doc.fontSize(9).text(`Fim: ${dados.dataFim}`, 405, y + 28);
 
       doc.x = doc.page.margins.left;
-      
-      // A MÁGICA ESTÁ AQUI:
-      // O texto que vaza de página agora vai começar no Y = 108.
-      // Como a linha da caixa é desenhada no 100, isso cria 8 pixels perfeitos de margem (padding)!
       doc.y = 108; 
+
+      doc.font('Helvetica').fontSize(10);
     };
 
     doc.on('pageAdded', () => desenharCabecalho());
     
     desenharCabecalho();
-    
-    // Força o primeiro bloco do PDF a começar no 100 para ficar alinhado
     doc.y = 100;
 
-    // --- BLOCO: CLIENTE E SERVIÇO ---
+    // --- BLOCO: CLIENTE, PROJETO, TASK, SERVIÇO ---
     let currentY = doc.y;
-    doc.rect(margin, currentY, width, 40).stroke();
-    doc.moveTo(margin, currentY + 20).lineTo(margin + width, currentY + 20).stroke();
-    
-    doc.font('Helvetica-Bold').fontSize(10).text("Cliente / Projeto: ", margin + 5, currentY + 6, { lineBreak: false });
-    doc.font('Helvetica', 10).text(dados.cliente, margin + 105, currentY + 6, { lineBreak: false });
-    
-    doc.font('Helvetica-Bold').fontSize(10).text("Serviço Principal: ", margin + 5, currentY + 26, { lineBreak: false });
-    doc.font('Helvetica', 10).text(dados.servico, margin + 105, currentY + 26, { lineBreak: false });
-    
-    doc.y = currentY + 55;
+        
+    // 1. Definimos o conteúdo e calculamos a altura necessária
+    const infoText = `Cliente: ${dados.cliente}\nProjeto: ${dados.projeto} | Task: ${dados.task}\nServiço: ${dados.servico}`;
+
+    // Calcula a altura que o texto ocupará dentro da largura 'width'
+    const infoHeight = doc.heightOfString(infoText, { width: width - 10, align: 'left' });
+    const totalBoxHeight = infoHeight + 15; // Padding interno
+
+    // 2. Desenhamos o retângulo com a altura calculada
+    doc.rect(margin, currentY, width, totalBoxHeight).stroke();
+
+    // 3. Imprimimos o texto dentro
+    doc.font('Helvetica').fontSize(10)
+      .text(infoText, margin + 5, currentY + 5, { width: width - 10, align: 'left' });
+
+    // 4. Movemos o cursor para baixo da nova caixa calculada
+    doc.y = currentY + totalBoxHeight + 10;
 
     // --- LAÇO DOS BLOCOS DIÁRIOS ---
     for (const dia of dados.dias) {
@@ -53,7 +70,7 @@ class ResidentialRdoStrategy {
 
       if (doc.y + 40 > bottomEdge) {
         doc.addPage();
-        doc.y = 100; // Mantém a coerência da caixa começando no 100
+        doc.y = 100; 
       }
 
       const dayStartY = doc.y;
@@ -99,34 +116,48 @@ class ResidentialRdoStrategy {
         doc.x = margin;
 
         if (ativ.imagens && ativ.imagens.length > 0) {
-          doc.y += 10;
+          doc.y += 10; 
           let imgStartY = doc.y;
+          let currentImgX = vertLineX + 8; 
+          const gap = 10; 
+          const targetH = 130; 
+          const maxColW = 435; 
 
-          ativ.imagens.forEach((imgBase64, imgIndex) => {
-            const coluna = imgIndex % 2;
-            const linha = Math.floor(imgIndex / 2);
-
-            if (coluna === 0 && imgIndex > 0) {
-              imgStartY += 140;
-              doc.y = imgStartY;
-            }
-
-            if (imgStartY + 130 > bottomEdge) {
-              doc.addPage();
-              imgStartY = 108; // As fotos também ganham o respiro de 8px!
-              doc.y = imgStartY;
-            }
-
+          ativ.imagens.forEach((imgBase64) => {
             try {
               const base64Data = imgBase64.replace(/^data:image\/\w+;base64,/, "");
               const imgBuffer = Buffer.from(base64Data, 'base64');
-              const posX = vertLineX + 8 + (coluna * 220);
-              doc.image(imgBuffer, posX, imgStartY, { fit: [210, 125] });
+              
+              const img = doc.openImage(imgBuffer);
+              let imgW = (img.width / img.height) * targetH;
+              let imgH = targetH;
+
+              if (imgW > maxColW) {
+                imgW = maxColW;
+                imgH = (img.height / img.width) * maxColW;
+              }
+
+              if (currentImgX + imgW > margin + width - 8) {
+                currentImgX = vertLineX + 8; 
+                imgStartY += targetH + gap;  
+                doc.y = imgStartY;
+              }
+
+              if (imgStartY + imgH > bottomEdge) {
+                doc.addPage();
+                imgStartY = 108; 
+                doc.y = imgStartY;
+                currentImgX = vertLineX + 8;
+              }
+
+              doc.image(imgBuffer, currentImgX, imgStartY, { width: imgW, height: imgH });
+              currentImgX += imgW + gap;
             } catch (error) {
               console.error("Erro ao renderizar foto:", error);
             }
           });
-          doc.y = imgStartY + 135; 
+          
+          doc.y = imgStartY + targetH + 10; 
         } else {
           doc.y += 8; 
         }
@@ -149,7 +180,6 @@ class ResidentialRdoStrategy {
           doc.moveTo(margin, bottomBoundary).lineTo(margin + width, bottomBoundary).stroke();
 
           if (i > startPage) {
-            // A linha desenha rigorosamente no 100, mas o texto lá no começo manda escrever no 108
             doc.moveTo(margin, 100).lineTo(margin + width, 100).stroke();
           }
         }
@@ -168,16 +198,16 @@ class ResidentialRdoStrategy {
 
     const block5Y = 750;
 
-    doc.rect(margin, block5Y, width, 40).stroke();
-    doc.moveTo(margin + width / 2, block5Y).lineTo(margin + width / 2, block5Y + 40).stroke();
+    doc.rect(margin, block5Y, width, 60).stroke();
+    doc.moveTo(margin + width / 2, block5Y).lineTo(margin + width / 2, block5Y + 60).stroke();
     doc.moveTo(margin, block5Y + 20).lineTo(margin + width, block5Y + 20).stroke();
     
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#000000');
-    doc.text("Responsável Execução (Assinatura):", margin + 5, block5Y + 6, { lineBreak: false });
-    doc.text(`Emitido em: ${dados.dataInicio}`, margin + 150, block5Y + 26, { lineBreak: false });
+    doc.text(`Elaborado por: ${dados.tecnico}`, margin + 5, block5Y + 6, { lineBreak: false });
+    doc.text(`Assinatura Emerson`, margin + 150, block5Y + 26, { lineBreak: false });
     
-    doc.text("Fiscalização / Cliente (Assinatura):", margin + width / 2 + 5, block5Y + 6, { lineBreak: false });
-    doc.text(`Recebido em: ${dados.dataFim}`, margin + width / 2 + 150, block5Y + 26, { lineBreak: false });
+    doc.text("Fiscalização / Cliente:", margin + width / 2 + 5, block5Y + 6, { lineBreak: false });
+    doc.text(`Assinatura Fiscal/Cliente`, margin + width / 2 + 150, block5Y + 26, { lineBreak: false });
 
     return doc;
   }

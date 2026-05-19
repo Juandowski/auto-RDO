@@ -11,6 +11,9 @@ const mascaraHora = (valor) => {
 
 function App() {
   const [cliente, setCliente] = useState('');
+  const [projeto, setProjeto] = useState('');
+  const [task, setTask] = useState('');
+  const [tecnico, setTecnico] = useState('');
   const [servico, setServico] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
@@ -105,7 +108,7 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { cliente, servico, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
+    const payload = { cliente, projeto, task, tecnico, servico, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
       const response = await fetch('http://localhost:3001/api/gerar-rdo', {
         method: 'POST',
@@ -133,8 +136,11 @@ function App() {
       <p className="subtitle">Preenchimento Dinâmico por Período</p>
 
       <form onSubmit={handleSubmit} className="rdo-form">
-        <div className="form-group"><label>Cliente / Projeto:</label><input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required /></div>
-        <div className="form-group"><label>Serviço Principal:</label><input type="text" value={servico} onChange={(e) => setServico(e.target.value)} required /></div>
+        <div className="form-group"><label>Cliente:</label><input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required /></div>
+        <div className="form-group"><label>Tecnico Responsavel:</label><input type="text" value={tecnico} onChange={(e) => setTecnico(e.target.value)} required /></div>
+        <div className="form-group"><label>Projeto:</label><input type="text" value={projeto} onChange={(e) => setProjeto(e.target.value)} required /></div>
+        <div className="form-group"><label>Task:</label><input type="text" value={task} onChange={(e) => setTask(e.target.value)} required /></div>
+        <div className="form-group"><label>Descrição do Serviço:</label><input type="text" value={servico} onChange={(e) => setServico(e.target.value)} required /></div>
 
         <div style={{ display: 'flex', gap: '20px' }}>
           <div className="form-group" style={{ flex: 1 }}><label>Data de Início:</label><input type="text" placeholder="DD/MM/AAAA" value={dataInicio} onChange={(e) => setDataInicio(mascaraData(e.target.value))} required /></div>
