@@ -110,7 +110,7 @@ function App() {
     e.preventDefault();
     const payload = { cliente, projeto, task, tecnico, servico, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
-      const response = await fetch('http://localhost:3001/api/gerar-rdo', {
+      const response = await fetch('https://auto-rdo.onrender.com/api/gerar-rdo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
