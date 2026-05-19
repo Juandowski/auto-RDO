@@ -1,6 +1,11 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
+app.use(cors({
+  origin: '*', // Ou coloque o link do seu Vercel aqui para mais segurança
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
 
 // RETORNAMOS PARA O PDFKIT PADRÃO (Sem tabelas fantasmas que criam páginas)
 const PDFDocument = require('pdfkit'); 
