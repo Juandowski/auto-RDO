@@ -1,4 +1,3 @@
-// backend/strategies/ResidentialRdoStrategy.js
 const fs = require('fs');
 const path = require('path');
 
@@ -8,22 +7,20 @@ class ResidentialRdoStrategy {
     const width = 495;
     const bottomEdge = 750; 
 
-    // --- FUNÇÃO PARA DESENHAR O CABEÇALHO ---
+    // DESENHO DO CABEÇALHO
     const desenharCabecalho = () => {
       const y = 40;
       doc.rect(margin, y, width, 50).stroke();
       doc.moveTo(180, y).lineTo(180, y + 50).stroke();
       doc.moveTo(400, y).lineTo(400, y + 50).stroke();
       
-      // --- LOGO DA EMERSON ---
-      // Procura a imagem dentro da pasta 'backend/assets/'
+      // LOGO
       const logoPath = path.join(__dirname, '../assets/logo.png'); 
       
       if (fs.existsSync(logoPath)) {
-        // Encaixa a imagem perfeitamente dentro da primeira caixa (com folga de borda)
+        // ENCAIXA A LOGO DENTRO DO BOX
         doc.image(logoPath, margin + 5, y + 5, { fit: [120, 40], align: 'center', valign: 'center' });
       } else {
-        // Se a imagem não estiver na pasta, não quebra o sistema e deixa um aviso
         doc.font('Helvetica').fontSize(8).fillColor('#999999').text("Adicione logo.png na pasta assets", margin + 5, y + 20, { width: 120, align: 'center' });
       }
 
@@ -43,27 +40,25 @@ class ResidentialRdoStrategy {
     desenharCabecalho();
     doc.y = 100;
 
-    // --- BLOCO: CLIENTE, PROJETO, TASK, SERVIÇO ---
+    // BOX: CLIENTE, PROJETO, TASK, SERVIÇO ---
     let currentY = doc.y;
         
-    // 1. Definimos o conteúdo e calculamos a altura necessária
+    // DEFIINE O CONTEUDO E A ALTURA
     const infoText = `Cliente: ${dados.cliente}\nProjeto: ${dados.projeto} | Task: ${dados.task}\nServiço: ${dados.servico}`;
 
     // Calcula a altura que o texto ocupará dentro da largura 'width'
     const infoHeight = doc.heightOfString(infoText, { width: width - 10, align: 'left' });
     const totalBoxHeight = infoHeight + 15; // Padding interno
 
-    // 2. Desenhamos o retângulo com a altura calculada
     doc.rect(margin, currentY, width, totalBoxHeight).stroke();
 
-    // 3. Imprimimos o texto dentro
+    // Imprimime o texto dentro
     doc.font('Helvetica').fontSize(10)
       .text(infoText, margin + 5, currentY + 5, { width: width - 10, align: 'left' });
 
-    // 4. Movemos o cursor para baixo da nova caixa calculada
+    // Move o cursor para baixo da nova box calculada
     doc.y = currentY + totalBoxHeight + 10;
 
-    // --- LAÇO DOS BLOCOS DIÁRIOS ---
     for (const dia of dados.dias) {
       const atividadesList = dia.atividades.filter(ativ => ativ.texto.trim() !== '' || ativ.imagens.length > 0);
       if (atividadesList.length === 0) atividadesList.push({ texto: 'Sem relatos.', imagens: [] });
@@ -191,7 +186,7 @@ class ResidentialRdoStrategy {
       doc.y += 15; 
     }
 
-    // --- BLOCO: ASSINATURAS FIXAS NO FIM ---
+    // BOX: ASSINATURAS FIXAS NO FIM
     if (doc.y + 60 > bottomEdge) {
       doc.addPage();
     }

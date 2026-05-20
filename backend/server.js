@@ -1,13 +1,12 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
 app.use(cors({
-  origin: '*', // Ou coloque o link do seu Vercel aqui para mais segurança
+  origin: '*', 
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
 
-// RETORNAMOS PARA O PDFKIT PADRÃO (Sem tabelas fantasmas que criam páginas)
+// RETORNA PARA O PDFKIT PADRÃO (Sem tabelas fantasmas que criam páginas)
 const PDFDocument = require('pdfkit'); 
 
 const RdoContext = require('./context/RdoContext');
@@ -37,9 +36,7 @@ app.post('/api/gerar-rdo', async (req, res) => {
 
     rdoContext.setStrategy(estrategiaEscolhida);
 
-    // Inicializa o PDFKit padrão com margens zeradas para controlarmos os blocos na margem
-    // Inicializa o PDFKit zerando as margens invisíveis para termos 100% de controle
-    // Inicializa o PDFKit com margens seguras e a "Máquina do Tempo" ativada
+    // Inicializa o PDFKit padrão com margens zeradas para controlarm os blocos na margem
     const doc = new PDFDocument({ 
       size: 'A4', 
       margins: { top: 100, bottom: 90, left: 50, right: 50 },

@@ -44,7 +44,6 @@ function App() {
           data: `${diaStr}/${mesStr}/${anoStr}`,
           horaInicio: '08:00',
           horaFim: '17:00',
-          // A MUDANÇA ESTÁ AQUI: Agora cada atividade é um objeto com texto e fotos próprios
           atividades: [{ texto: '', imagens: [] }]
         });
         
@@ -81,7 +80,7 @@ function App() {
     }
   };
 
-  // UPLOAD DA IMAGEM AGORA VINCULADO AO ITEM
+  // UPLOAD DA IMAGEM VINCULADA AO ITEM
   const handleImageUpload = (indexDia, indexAtividade, event) => {
     const files = Array.from(event.target.files);
     
@@ -183,14 +182,12 @@ function App() {
                         )}
                       </div>
 
-                      {/* CAIXA DE UPLOAD ESPECÍFICA PARA ESTE ITEM */}
                       <div style={{ marginTop: '10px', paddingLeft: '45px' }}>
                         <label style={{ fontSize: '12px', color: '#64748b', cursor: 'pointer', display: 'inline-block', backgroundColor: '#f1f5f9', padding: '5px 10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                           📷 Anexar Foto a este item
                           <input type="file" accept="image/*" multiple onChange={(e) => handleImageUpload(indexDia, indexAtiv, e)} style={{ display: 'none' }} />
                         </label>
                         
-                        {/* PREVIEW E BOTÃO REMOVER IMAGEM */}
                         {ativ.imagens.length > 0 && (
                           <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
                             {ativ.imagens.map((img, i) => (
