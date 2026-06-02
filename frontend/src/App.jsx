@@ -133,7 +133,7 @@ function App() {
   return (
     <div className="container">
       <h1>Relatório Diário de Obra</h1>
-      <p className="subtitle">Preenchimento Dinâmico por Período</p>
+      <p className="subtitle">Preencha o Forms para gerar o RDO automatico</p>
 
       <form onSubmit={handleSubmit} className="rdo-form">
         <div className="form-group"><label>Cliente:</label><input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required /></div>
