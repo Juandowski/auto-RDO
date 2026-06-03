@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import InputDinamico from './InputDinamico';
+
 
 const mascaraData = (valor) => {
   return valor.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 10);
@@ -13,8 +15,10 @@ function App() {
   const [cliente, setCliente] = useState('');
   const [projeto, setProjeto] = useState('');
   const [task, setTask] = useState('');
+  const [po, setPo] = useState('');
   const [tecnico, setTecnico] = useState('');
   const [servico, setServico] = useState('');
+  const [escopo, setEscopo] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [diasDados, setDiasDados] = useState([]);
@@ -60,9 +64,14 @@ function App() {
     setDiasDados(novosDias);
   };
 
-  const handleAtividadeChange = (indexDia, indexAtividade, valor) => {
+  const handleAtividadeChange = (indexDia, indexAtiv, campo, valor) => {
+    // 1. Cria uma cópia limpa do array de dias para não atualizar o estado direto na memória
     const novosDias = [...diasDados];
-    novosDias[indexDia].atividades[indexAtividade].texto = valor;
+    
+    // 2. Atualiza exatamente o campo que foi modificado ('titulo' ou 'texto')
+    novosDias[indexDia].atividades[indexAtiv][campo] = valor;
+    
+    // 3. Devolve o novo valor para o React atualizar a tela em tempo real
     setDiasDados(novosDias);
   };
 
@@ -107,9 +116,9 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { cliente, projeto, task, tecnico, servico, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
+    const payload = { cliente, projeto, task, po, tecnico, servico, escopo, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
-      const response = await fetch('https://auto-rdo.onrender.com/api/gerar-rdo', {
+      const response = await fetch('http://localhost:3001/api/gerar-rdo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -135,11 +144,48 @@ function App() {
       <p className="subtitle">Preenchimento Dinâmico por Período</p>
 
       <form onSubmit={handleSubmit} className="rdo-form">
-        <div className="form-group"><label>Cliente:</label><input type="text" value={cliente} onChange={(e) => setCliente(e.target.value)} required /></div>
-        <div className="form-group"><label>Tecnico Responsavel:</label><input type="text" value={tecnico} onChange={(e) => setTecnico(e.target.value)} required /></div>
-        <div className="form-group"><label>Projeto:</label><input type="text" value={projeto} onChange={(e) => setProjeto(e.target.value)} required /></div>
-        <div className="form-group"><label>Task:</label><input type="text" value={task} onChange={(e) => setTask(e.target.value)} required /></div>
-        <div className="form-group"><label>Descrição do Serviço:</label><input type="text" value={servico} onChange={(e) => setServico(e.target.value)} required /></div>
+        
+        <InputDinamico 
+          label="Cliente:" 
+          value={cliente} 
+          onChange={(e) => setCliente(e.target.value)} 
+          placeholder="Digite o nome do cliente..."
+        />
+
+        <InputDinamico 
+          label="Projeto:" 
+          value={projeto} 
+          onChange={(e) => setProjeto(e.target.value)} 
+          placeholder="Nome do projeto..."
+        />
+
+        <InputDinamico 
+          label="Task:" 
+          value={task} 
+          onChange={(e) => setTask(e.target.value)} 
+          placeholder="Número da Task..."
+        />
+
+        <InputDinamico 
+          label="PO:" 
+          value={po} 
+          onChange={(e) => setPo(e.target.value)} 
+          placeholder="Product Owner..."
+        />
+
+        <InputDinamico 
+          label="Serviço:" 
+          value={servico} 
+          onChange={(e) => setServico(e.target.value)} 
+          placeholder="Descreva o serviço..."
+        />
+
+        <InputDinamico 
+          label="Escopo do Serviço Contratado:" 
+          value={escopo} 
+          onChange={(e) => setEscopo(e.target.value)} 
+          placeholder="Digite o escopo detalhado..."
+        />
 
         <div style={{ display: 'flex', gap: '20px' }}>
           <div className="form-group" style={{ flex: 1 }}><label>Data de Início:</label><input type="text" placeholder="DD/MM/AAAA" value={dataInicio} onChange={(e) => setDataInicio(mascaraData(e.target.value))} required /></div>
@@ -165,17 +211,40 @@ function App() {
                   {dia.atividades.map((ativ, indexAtiv) => (
                     <div key={indexAtiv} style={{ marginBottom: '20px', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '6px', backgroundColor: '#ffffff' }}>
                       <div style={{ display: 'flex', alignItems: 'stretch' }}>
-                        <span style={{ padding: '10px', backgroundColor: '#e2e8f0', borderRadius: '6px 0 0 6px', fontWeight: 'bold' }}>
+                        {/* Número indicador à esquerda */}
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 15px', backgroundColor: '#e2e8f0', borderRadius: '6px 0 0 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', borderRight: 'none' }}>
                           {indexAtiv + 1}.
                         </span>
-                        
-                        <textarea 
-                          style={{ flex: 1, borderRadius: dia.atividades.length > 1 ? '0' : '0 6px 6px 0', border: '1px solid #cbd5e1', borderLeft: 'none', borderRight: dia.atividades.length > 1 ? 'none' : '1px solid #cbd5e1', padding: '10px', resize: 'vertical', minHeight: '60px', fontFamily: 'inherit', fontSize: '16px', outline: 'none' }}
-                          value={ativ.texto} 
-                          onChange={(e) => handleAtividadeChange(indexDia, indexAtiv, e.target.value)} 
-                          placeholder="Descreva a atividade..."
-                          rows="2" required 
-                        />
+
+                        {/* Bloco empilhado com Título + Descrição */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px', border: '1px solid #cbd5e1', borderLeft: 'none', borderRight: dia.atividades.length > 1 ? 'none' : '1px solid #cbd5e1', borderRadius: dia.atividades.length > 1 ? '0' : '0 6px 6px 0', backgroundColor: '#ffffff' }}>
+                          
+                          {/* Novo campo de Título */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>Título da Atividade:</label>
+                            <input 
+                              type="text"
+                              style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }}
+                              value={ativ.titulo || ''} 
+                              onChange={(e) => handleAtividadeChange(indexDia, indexAtiv, 'titulo', e.target.value)} // Note o 'titulo' aqui
+                              placeholder="Ex: Infraestrutura de leitos, Lançamento de cabos..."
+                              required 
+                            />
+                          </div>
+
+                          {/* Seu campo de descrição adaptado */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>Descrição Detalhada:</label>
+                            <textarea 
+                              style={{ borderRadius: '4px', border: '1px solid #cbd5e1', padding: '10px', resize: 'vertical', minHeight: '60px', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }}
+                              value={ativ.texto} 
+                              onChange={(e) => handleAtividadeChange(indexDia, indexAtiv, 'texto', e.target.value)} // Note o 'texto' aqui
+                              placeholder="Descreva detalhadamente o que foi feito..."
+                              rows="2" required 
+                            />
+                          </div>
+
+                        </div>
 
                         {dia.atividades.length > 1 && (
                           <button type="button" onClick={() => removerAtividade(indexDia, indexAtiv)} style={{ padding: '0 15px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '0 6px 6px 0', cursor: 'pointer', fontWeight: 'bold' }}>X</button>

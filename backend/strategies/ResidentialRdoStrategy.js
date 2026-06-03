@@ -26,8 +26,9 @@ class ResidentialRdoStrategy {
 
       doc.font('Helvetica-Bold').fontSize(14).fillColor('#000000').text("RELATÓRIO DIÁRIO DE OBRA", 180, y + 15, { width: 220, align: 'center' });
       doc.fontSize(12).text("(RDO)", 180, y + 30, { width: 220, align: 'center' });
-      doc.fontSize(9).text(`Início: ${dados.dataInicio}`, 405, y + 12);
-      doc.fontSize(9).text(`Fim: ${dados.dataFim}`, 405, y + 28);
+      doc.fontSize(10).text(`Periodo de atendimento:`, 405, y + 8);
+      doc.fontSize(9).text(`Início: ${dados.dataInicio}`, 405, y + 22);
+      doc.fontSize(9).text(`Fim: ${dados.dataFim}`, 405, y + 32);
 
       doc.x = doc.page.margins.left;
       doc.y = 108; 
@@ -36,28 +37,85 @@ class ResidentialRdoStrategy {
     };
 
     doc.on('pageAdded', () => desenharCabecalho());
-    
+
     desenharCabecalho();
-    doc.y = 100;
+    doc.y = 100; // Define o início do bloco logo abaixo do cabeçalho
 
     // BOX: CLIENTE, PROJETO, TASK, SERVIÇO ---
     let currentY = doc.y;
-        
-    // DEFIINE O CONTEUDO E A ALTURA
-    const infoText = `Cliente: ${dados.cliente}\nProjeto: ${dados.projeto} | Task: ${dados.task}\nServiço: ${dados.servico}`;
+    const contentWidth = width - 20; // Largura interna do texto com margem de segurança
+    const lineSpacing = 14;          // Espaçamento vertical padrão entre blocos
 
-    // Calcula a altura que o texto ocupará dentro da largura 'width'
-    const infoHeight = doc.heightOfString(infoText, { width: width - 10, align: 'left' });
-    const totalBoxHeight = infoHeight + 15; // Padding interno
+    // 1. Calcula a altura dinâmica de cada linha (caso o texto quebre devido ao tamanho)
+    const textCliente = `${dados.cliente || ''}`;
+    const heightCliente = doc.heightOfString(textCliente, { width: contentWidth - 50 }); // Desconta o tamanho do rótulo
 
+    const textProjetoTaskPo = `${dados.projeto || ''}   |   Task: ${dados.task || ''}   |   PO: ${dados.po || ''}`;
+    const heightProjetoTaskPo = doc.heightOfString(textProjetoTaskPo, { width: contentWidth - 50 });
+
+    const textServico = `${dados.servico || ''}`;
+    const heightServico = doc.heightOfString(textServico, { width: contentWidth - 50 });
+
+    // 2. Soma as alturas calculadas com os devidos respiros para achar o tamanho total da caixa
+    const totalBoxHeight = heightCliente + heightProjetoTaskPo + heightServico + 20; // 20px de padding interno total
+
+    // 3. Desenha a moldura (caixa externa) perfeitamente ajustada
     doc.rect(margin, currentY, width, totalBoxHeight).stroke();
 
-    // Imprimime o texto dentro
-    doc.font('Helvetica').fontSize(10)
-      .text(infoText, margin + 5, currentY + 5, { width: width - 10, align: 'left' });
+    // 4. Carimba os textos misturando Negrito e Normal cirurgicamente com coordenadas relativas
+    let textY = currentY + 8; // Posição do primeiro texto dentro da caixa
 
-    // Move o cursor para baixo da nova box calculada
-    doc.y = currentY + totalBoxHeight + 10;
+    // Linha 1: Cliente
+    doc.font('Helvetica-Bold').fontSize(10).text('Cliente: ', margin + 10, textY, { continued: true });
+    doc.font('Helvetica').text(textCliente);
+
+    // Linha 2: Projeto | Task | PO
+    textY += heightCliente + 4; // Empurra para baixo com base na altura real do cliente
+    doc.font('Helvetica-Bold').text('Projeto: ', margin + 10, textY, { continued: true });
+    doc.font('Helvetica').text(`${dados.projeto || ''}   `, { continued: true });
+
+    doc.font('Helvetica-Bold').text('|   Task: ', { continued: true });
+    doc.font('Helvetica').text(`${dados.task || ''}   `, { continued: true });
+
+    doc.font('Helvetica-Bold').text('|   PO: ', { continued: true });
+    doc.font('Helvetica').text(`${dados.po || ''}`); // Sem 'continued' para fechar a linha
+
+    // Linha 3: Serviço
+    textY += heightProjetoTaskPo + 4; // Empurra para baixo com base na altura real do bloco do meio
+    doc.font('Helvetica-Bold').text('Serviço: ', margin + 10, textY, { continued: true });
+    doc.font('Helvetica').text(textServico);
+
+    // 5. Move o cursor definitivo do PDFKit para baixo da caixa para os próximos blocos não atropelarem
+    doc.y = currentY + totalBoxHeight + 15;
+
+    //----------------------------------------------------------------------------------------------------
+
+    let escopoY = doc.y; // Mudou o nome para não chocar com currentY
+    
+    const textEscopo = `${dados.escopo || ''}`;
+    // Mede o texto do escopo na largura total interna da caixa
+    const heightEscopo = doc.heightOfString(textEscopo, { width: contentWidth - 10 }); 
+
+    // Altura total: espaço do título (16px) + altura do texto livre + margens internas
+    const totalBoxHeightEscopo = heightEscopo + 35; 
+
+    // Desenha a moldura do escopo
+    doc.rect(margin, escopoY, width, totalBoxHeightEscopo).stroke();
+
+    // Carimba o Título em Negrito
+    doc.font('Helvetica-Bold').fontSize(10).text('Escopo do Serviço Contratado:', margin + 10, escopoY + 8);
+    
+    // Carimba o texto longo logo abaixo do título em fonte normal (Sem continued para não bugar se quebrar linha)
+    doc.font('Helvetica').text(textEscopo, margin + 10, escopoY + 24, { 
+      width: contentWidth - 10, 
+      align: 'left' 
+    });
+
+    // Move o cursor do PDFKit para baixo da caixa de escopo de forma definitiva
+    doc.y = escopoY + totalBoxHeightEscopo + 15;
+
+
+    //----------------------------------------------------------------------------------------------------
 
     for (const dia of dados.dias) {
       const atividadesList = dia.atividades.filter(ativ => ativ.texto.trim() !== '' || ativ.imagens.length > 0);
@@ -98,18 +156,28 @@ class ResidentialRdoStrategy {
           doc.text(`${index + 1}`, margin, startY + 8, { width: 35, align: 'center', lineBreak: false });
         }
 
-        doc.font('Helvetica').fontSize(10).fillColor('#000000');
-        
+        // --- AJUSTE DE MARGEM PARA O CONTEÚDO (TÍTULO E DESCRIÇÃO) ---
         const originalLeftMargin = doc.page.margins.left;
         doc.page.margins.left = vertLineX + 8;
         doc.x = vertLineX + 8;
         doc.y = startY + 8;
 
+        // 1. Imprime o TÍTULO da Atividade em Negrito (Se existir no formulário)
+        if (ativ.titulo) {
+          doc.font('Helvetica-Bold').fontSize(10).fillColor('#000000');
+          doc.text(ativ.titulo, { width: 445, align: 'left' });
+          doc.y += 4; // Pequeno respiro de 4px entre o título e a descrição
+        }
+
+        // 2. Imprime a DESCRIÇÃO Detalhada em Fonte Normal (Seu código original)
+        doc.font('Helvetica').fontSize(10).fillColor('#000000');
         doc.text(ativ.texto || 'Sem relatos.', { width: 445, align: 'left' });
 
+        // Restaura a margem padrão do documento
         doc.page.margins.left = originalLeftMargin;
         doc.x = margin;
 
+        // --- RENDERIZAÇÃO DAS IMAGENS (Mantido idêntico) ---
         if (ativ.imagens && ativ.imagens.length > 0) {
           doc.y += 10; 
           let imgStartY = doc.y;
@@ -162,6 +230,7 @@ class ResidentialRdoStrategy {
 
         const activePage = doc.bufferedPageRange().count - 1;
 
+        // --- DESENHO DA GRADE / BOX (Mantido idêntico) ---
         for (let i = startPage; i <= endPage; i++) {
           doc.switchToPage(i); 
 

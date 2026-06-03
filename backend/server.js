@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+
+const app = express();
+
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST'],
@@ -12,7 +15,7 @@ const PDFDocument = require('pdfkit');
 const RdoContext = require('./context/RdoContext');
 const ResidentialRdoStrategy = require('./strategies/ResidentialRdoStrategy');
 
-const app = express();
+
 app.use(cors());
 
 app.use(express.json({ limit: '50mb' }));

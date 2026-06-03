@@ -75,3 +75,22 @@ input:focus, select:focus, textarea:focus {
 .btn-submit:hover {
   background-color: #1d4ed8;
 }
+
+/* Estilo padrão da caixa de texto quando está ociosa */
+.input-estilo-dinamico {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 14px;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Transição suave para o efeito nascer devagar */
+}
+
+/* ✨ Efeito da borda azul brilhando ao clicar/selecionar a box ✨ */
+.input-estilo-dinamico:focus {
+  border-color: #0066cc; /* Muda a cor da linha da borda para um azul mais vivo */
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.4); /* Cria a "aura" ou o efeito neon azul borrado ao redor */
+  outline: none; /* Remove aquela borda preta ou amarela padrão e feia do navegador */
+}
