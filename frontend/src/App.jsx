@@ -118,7 +118,8 @@ function App() {
     e.preventDefault();
     const payload = { cliente, projeto, task, po, tecnico, servico, escopo, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
-      const response = await fetch('http://localhost:3001/api/gerar-rdo', {
+      //https://auto-rdo.onrender.com/api/gerar-rdo
+      const response = await fetch('https://auto-rdo.onrender.com/api/gerar-rdo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -141,7 +142,7 @@ function App() {
   return (
     <div className="container">
       <h1>Relatório Diário de Obra</h1>
-      <p className="subtitle">Preenchimento Dinâmico por Período</p>
+      <p className="subtitle">Preencha o Forms para gerar o RDO automatico</p>
 
       <form onSubmit={handleSubmit} className="rdo-form">
         
