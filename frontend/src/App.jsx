@@ -119,7 +119,8 @@ function App() {
     const payload = { cliente, projeto, task, po, tecnico, servico, escopo, dataInicio, dataFim, dias: diasDados, tipoLayout: 'residencial' };
     try {
       //https://auto-rdo.onrender.com/api/gerar-rdo
-      const response = await fetch('https://auto-rdo.onrender.com/api/gerar-rdo', {
+      //http://localhost:3001/api/gerar-rdo
+      const response = await fetch('http://localhost:3001/api/gerar-rdo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -186,6 +187,7 @@ function App() {
           value={escopo} 
           onChange={(e) => setEscopo(e.target.value)} 
           placeholder="Digite o escopo detalhado..."
+          tipo="textarea"
         />
 
         <div style={{ display: 'flex', gap: '20px' }}>
@@ -228,7 +230,7 @@ function App() {
                               style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', fontFamily: 'inherit' }}
                               value={ativ.titulo || ''} 
                               onChange={(e) => handleAtividadeChange(indexDia, indexAtiv, 'titulo', e.target.value)} // Note o 'titulo' aqui
-                              placeholder="Ex: Infraestrutura de leitos, Lançamento de cabos..."
+                              placeholder="Titulo da atividade..."
                               required 
                             />
                           </div>
