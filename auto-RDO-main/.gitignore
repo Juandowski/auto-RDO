@@ -1,0 +1,10 @@
+# Ignorar dependências do Node
+node_modules/
+**/node_modules/
+
+# Ignorar arquivos de build do React
+dist/
+build/
+
+# Ignorar arquivos de log
+*.log
