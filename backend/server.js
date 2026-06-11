@@ -13,7 +13,7 @@ app.use(cors({
 const PDFDocument = require('pdfkit'); 
 
 const RdoContext = require('./context/RdoContext');
-const ResidentialRdoStrategy = require('./strategies/ResidentialRdoStrategy');
+const ResidentialRdoStrategy = require('./rdo/renders/ResidentialRdoStrategy');
 
 
 app.use(cors());

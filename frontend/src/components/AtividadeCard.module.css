@@ -1,0 +1,164 @@
+.card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.cardRow {
+  display: flex;
+  align-items: stretch;
+}
+
+.numero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: #e2e8f0;
+  font-weight: 700;
+  font-size: 14px;
+  color: #334155;
+  border-right: 1px solid #cbd5e1;
+  min-width: 44px;
+}
+
+.campos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.campoGrupo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.campoInput {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.campoInput:focus {
+  border-color: #3b82f6;
+}
+
+.campoTextarea {
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.campoTextarea:focus {
+  border-color: #3b82f6;
+}
+
+.btnRemover {
+  padding: 0 16px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-left: 1px solid #dc2626;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.btnRemover:hover {
+  background: #dc2626;
+}
+
+/* Galeria */
+.galeriaArea {
+  padding: 10px 12px 12px 56px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.uploadLabel {
+  display: inline-block;
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.uploadLabel:hover {
+  background: #e2e8f0;
+}
+
+.uploadInput {
+  display: none;
+}
+
+.galeria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.galeriaItem {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.galeriaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+}
+
+.btnRemoverImg {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.btnRemoverImg:hover {
+  background: #dc2626;
+}
