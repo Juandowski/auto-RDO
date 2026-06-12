@@ -1,9 +1,5 @@
 const ImageBlockRenderer = require('./ImageBlockRenderer');
 
-/**
- * Renderiza uma única atividade (item numerado) dentro de um dia.
- * Gerencia o grid de bordas que pode se estender por múltiplas páginas.
- */
 class ActivityRenderer {
   constructor() {
     this.imageBlockRenderer = new ImageBlockRenderer();
@@ -65,20 +61,35 @@ class ActivityRenderer {
     doc.x = config.margin;
   }
 
+  /**
+   * Desenha o grid de bordas de uma atividade que pode se estender por N páginas.
+   *
+   * @param {PDFDocument} doc
+   * @param {number} startPage - índice da página onde a atividade começou
+   * @param {number} endPage   - índice da página onde a atividade terminou
+   * @param {number} startY    - coordenada Y inicial da atividade
+   * @param {number} endY      - coordenada Y final da atividade
+   * @param {RdoLayoutConfig} config
+   */
   _drawGrid(doc, startPage, endPage, startY, endY, config) {
     const { margin, pageWidth, bottomEdge, vertLineX, contentStartY } = config;
 
     for (let i = startPage; i <= endPage; i++) {
       doc.switchToPage(i);
 
-      const topBoundary = i === startPage ? startY : contentStartY;
-      const bottomBoundary = i === endPage ? endY : bottomEdge;
+      // Define os limites verticais desta fatia da atividade nesta página
+      const topBoundary    = i === startPage ? startY        : contentStartY;
+      const bottomBoundary = i === endPage   ? endY          : bottomEdge;
 
-      doc.moveTo(margin, topBoundary).lineTo(margin, bottomBoundary).stroke();
-      doc.moveTo(vertLineX, topBoundary).lineTo(vertLineX, bottomBoundary).stroke();
-      doc.moveTo(margin + pageWidth, topBoundary).lineTo(margin + pageWidth, bottomBoundary).stroke();
+      // Bordas verticais: esquerda externa, divisória do número, direita externa
+      doc.moveTo(margin,              topBoundary).lineTo(margin,              bottomBoundary).stroke();
+      doc.moveTo(vertLineX,           topBoundary).lineTo(vertLineX,           bottomBoundary).stroke();
+      doc.moveTo(margin + pageWidth,  topBoundary).lineTo(margin + pageWidth,  bottomBoundary).stroke();
+
+      // Borda horizontal inferior desta fatia
       doc.moveTo(margin, bottomBoundary).lineTo(margin + pageWidth, bottomBoundary).stroke();
 
+      // Borda horizontal superior nas páginas de continuação (fecha o topo da caixa)
       if (i > startPage) {
         doc.moveTo(margin, contentStartY).lineTo(margin + pageWidth, contentStartY).stroke();
       }

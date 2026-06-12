@@ -4,7 +4,6 @@ const SectionRenderer = require('./SectionRenderer');
 
 /**
  * Responsável exclusivamente por desenhar o cabeçalho do RDO.
- * Registra-se automaticamente no evento 'pageAdded' do PDFKit.
  */
 class HeaderRenderer extends SectionRenderer {
   render(doc, dados, config) {

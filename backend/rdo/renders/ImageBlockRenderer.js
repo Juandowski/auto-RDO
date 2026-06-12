@@ -1,6 +1,5 @@
 /**
  * Responsável por renderizar o bloco de imagens de uma atividade.
- * Encapsula toda a lógica de posicionamento e quebra de linha/página das fotos.
  */
 class ImageBlockRenderer {
   render(doc, imagens, config) {

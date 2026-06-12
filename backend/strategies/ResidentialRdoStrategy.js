@@ -5,20 +5,24 @@ const ScopeRenderer = require('./ScopeRenderer');
 const DayRenderer = require('./DayRenderer');
 const SignatureRenderer = require('./SignatureRenderer');
 
-/**
- * Mantém a sequência de renderização
- * e delega cada responsabilidade para o renderer correspondente.
- */
-class ResidentialRdoStrategy {
-  constructor(config = new RdoLayoutConfig()) {
-    this.config = config;
 
-    // Injeção de dependência: fácil de substituir em testes ou subclasses
-    this.headerRenderer    = new HeaderRenderer();
-    this.infoBoxRenderer   = new InfoBoxRenderer();
-    this.scopeRenderer     = new ScopeRenderer();
-    this.dayRenderer       = new DayRenderer();
-    this.signatureRenderer = new SignatureRenderer();
+class ResidentialRdoStrategy {
+  constructor(
+    config = new RdoLayoutConfig(),
+    {
+      headerRenderer    = new HeaderRenderer(),
+      infoBoxRenderer   = new InfoBoxRenderer(),
+      scopeRenderer     = new ScopeRenderer(),
+      dayRenderer       = new DayRenderer(),
+      signatureRenderer = new SignatureRenderer(),
+    } = {}
+  ) {
+    this.config           = config;
+    this.headerRenderer   = headerRenderer;
+    this.infoBoxRenderer  = infoBoxRenderer;
+    this.scopeRenderer    = scopeRenderer;
+    this.dayRenderer      = dayRenderer;
+    this.signatureRenderer = signatureRenderer;
   }
 
   async execute(doc, dados) {

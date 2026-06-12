@@ -1,6 +1,5 @@
 /**
  * Contrato base para todos os renderizadores de seção do RDO.
- * Cada subclasse é responsável por desenhar apenas seu próprio bloco no PDF.
  */
 class SectionRenderer {
   /**

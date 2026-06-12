@@ -1,6 +1,5 @@
 /**
  * Objeto de valor (Value Object) que centraliza todas as constantes de layout do RDO.
- * Elimina números mágicos espalhados pelo código.
  */
 class RdoLayoutConfig {
   constructor({

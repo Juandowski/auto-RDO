@@ -2,7 +2,6 @@ const SectionRenderer = require('./SectionRenderer');
 
 /**
  * Renderiza o bloco de identificação: Cliente, Projeto, Task, PO e Serviço.
- * A altura da caixa é calculada dinamicamente para acomodar texto longo.
  */
 class InfoBoxRenderer extends SectionRenderer {
   render(doc, dados, config) {

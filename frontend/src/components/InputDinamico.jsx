@@ -2,7 +2,6 @@ import styles from './InputDinamico.module.css';
 
 /**
  * Campo de formulário dinâmico: renderiza <input> ou <textarea>
- * dependendo da prop `tipo`.
  */
 function InputDinamico({ label, value, onChange, placeholder, tipo = 'input', required = false }) {
   return (

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { mascaraData, mascaraHora } from '../utils/mascaras';
-import { gerarRdoPdf, baixarBlob } from '../services/rdoService';
+import { atualizarDia, atualizarAtividade } from '../utils/diasUtils';
+import { useDateRange } from './useDateRange';
+
 
 const CAMPOS_INICIAIS = {
   cliente: '',
@@ -14,126 +16,52 @@ const CAMPOS_INICIAIS = {
   dataFim: '',
 };
 
-const ATIVIDADE_VAZIA = () => ({ titulo: '', texto: '', imagens: [] });
-
-const DIA_PADRAO = (dataStr) => ({
-  data: dataStr,
-  horaInicio: '08:00',
-  horaFim: '17:00',
-  atividades: [ATIVIDADE_VAZIA()],
-});
-
-/**
- * Gera a lista de dias entre duas datas (inclusive).
- * @param {string} dataInicio - formato DD/MM/AAAA
- * @param {string} dataFim    - formato DD/MM/AAAA
- * @returns {object[]}
- */
-function gerarListaDias(dataInicio, dataFim) {
-  const [diaI, mesI, anoI] = dataInicio.split('/');
-  const [diaF, mesF, anoF] = dataFim.split('/');
-
-  const inicio = new Date(`${anoI}-${mesI}-${diaI}T00:00:00`);
-  const fim = new Date(`${anoF}-${mesF}-${diaF}T00:00:00`);
-
-  if (inicio > fim) return null; // sinal de intervalo inválido
-
-  const dias = [];
-  let dataAtual = new Date(inicio);
-
-  while (dataAtual <= fim) {
-    const dd = String(dataAtual.getDate()).padStart(2, '0');
-    const mm = String(dataAtual.getMonth() + 1).padStart(2, '0');
-    const aaaa = dataAtual.getFullYear();
-    dias.push(DIA_PADRAO(`${dd}/${mm}/${aaaa}`));
-    dataAtual.setDate(dataAtual.getDate() + 1);
-  }
-
-  return dias;
-}
-
-/**
- * Hook principal do formulário RDO.
- * Centraliza estado, efeitos e handlers — mantendo o componente de UI limpo.
- */
 export function useRdoForm() {
   const [campos, setCampos] = useState(CAMPOS_INICIAIS);
   const [diasDados, setDiasDados] = useState([]);
-  const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
 
-  // --- Geração automática dos dias ao completar o intervalo de datas ---
-  useEffect(() => {
-    const { dataInicio, dataFim } = campos;
-    if (dataInicio.length !== 10 || dataFim.length !== 10) return;
+  // Delega a geração de dias para o hook especializado (SRP)
+  useDateRange(campos.dataInicio, campos.dataFim, {
+    onDiasGerados: (dias) => { setDiasDados(dias); setErro(null); },
+    onErro: (msg) => setErro(msg),
+  });
 
-    const lista = gerarListaDias(dataInicio, dataFim);
-
-    if (lista === null) {
-      setErro('A data de início não pode ser maior que a data final.');
-      return;
-    }
-
-    setErro(null);
-    setDiasDados(lista);
-  }, [campos.dataInicio, campos.dataFim]);
-
-  // --- Atualização de campos simples do cabeçalho ---
   const handleCampoChange = (nome, valor) => {
     const valorFormatado =
       nome === 'dataInicio' || nome === 'dataFim' ? mascaraData(valor) : valor;
     setCampos((prev) => ({ ...prev, [nome]: valorFormatado }));
   };
 
-  // --- Atualização de hora/data de um dia específico ---
   const handleDiaChange = (indexDia, campo, valor) => {
     const valorFormatado = campo.includes('hora') ? mascaraHora(valor) : valor;
-    setDiasDados((prev) =>
-      prev.map((dia, i) => (i === indexDia ? { ...dia, [campo]: valorFormatado } : dia))
-    );
+    // DRY: usa atualizarDia em vez de duplicar o prev.map
+    setDiasDados((prev) => atualizarDia(prev, indexDia, (dia) => ({ ...dia, [campo]: valorFormatado })));
   };
 
-  // --- Atualização de um campo dentro de uma atividade ---
   const handleAtividadeChange = (indexDia, indexAtiv, campo, valor) => {
-    setDiasDados((prev) =>
-      prev.map((dia, i) =>
-        i !== indexDia
-          ? dia
-          : {
-              ...dia,
-              atividades: dia.atividades.map((ativ, j) =>
-                j === indexAtiv ? { ...ativ, [campo]: valor } : ativ
-              ),
-            }
-      )
-    );
+    // DRY: usa atualizarAtividade em vez de duplicar o prev.map aninhado
+    setDiasDados((prev) => atualizarAtividade(prev, indexDia, indexAtiv, (ativ) => ({ ...ativ, [campo]: valor })));
   };
 
-  // --- Adicionar nova atividade vazia a um dia ---
   const addNovaAtividade = (indexDia) => {
     setDiasDados((prev) =>
-      prev.map((dia, i) =>
-        i === indexDia
-          ? { ...dia, atividades: [...dia.atividades, ATIVIDADE_VAZIA()] }
-          : dia
-      )
+      atualizarDia(prev, indexDia, (dia) => ({
+        ...dia,
+        atividades: [...dia.atividades, { titulo: '', texto: '', imagens: [] }],
+      }))
     );
   };
 
-  // --- Remover uma atividade de um dia (mínimo de 1 mantido) ---
   const removerAtividade = (indexDia, indexAtiv) => {
     setDiasDados((prev) =>
-      prev.map((dia, i) => {
-        if (i !== indexDia || dia.atividades.length <= 1) return dia;
-        return {
-          ...dia,
-          atividades: dia.atividades.filter((_, j) => j !== indexAtiv),
-        };
+      atualizarDia(prev, indexDia, (dia) => {
+        if (dia.atividades.length <= 1) return dia;
+        return { ...dia, atividades: dia.atividades.filter((_, j) => j !== indexAtiv) };
       })
     );
   };
 
-  // --- Upload de imagens (leitura assíncrona com FileReader) ---
   const handleImageUpload = (indexDia, indexAtiv, files) => {
     Promise.all(
       Array.from(files).map(
@@ -147,61 +75,39 @@ export function useRdoForm() {
       )
     ).then((base64Images) => {
       setDiasDados((prev) =>
-        prev.map((dia, i) =>
-          i !== indexDia
-            ? dia
-            : {
-                ...dia,
-                atividades: dia.atividades.map((ativ, j) =>
-                  j === indexAtiv
-                    ? { ...ativ, imagens: [...ativ.imagens, ...base64Images] }
-                    : ativ
-                ),
-              }
-        )
+        atualizarAtividade(prev, indexDia, indexAtiv, (ativ) => ({
+          ...ativ,
+          imagens: [...ativ.imagens, ...base64Images],
+        }))
       );
     });
   };
 
-  // --- Remover uma imagem específica de uma atividade ---
   const removerImagem = (indexDia, indexAtiv, indexImagem) => {
     setDiasDados((prev) =>
-      prev.map((dia, i) =>
-        i !== indexDia
-          ? dia
-          : {
-              ...dia,
-              atividades: dia.atividades.map((ativ, j) =>
-                j === indexAtiv
-                  ? { ...ativ, imagens: ativ.imagens.filter((_, k) => k !== indexImagem) }
-                  : ativ
-              ),
-            }
-      )
+      atualizarAtividade(prev, indexDia, indexAtiv, (ativ) => ({
+        ...ativ,
+        imagens: ativ.imagens.filter((_, k) => k !== indexImagem),
+      }))
     );
   };
 
-  // --- Submissão: chama o serviço e dispara o download ---
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setCarregando(true);
+  const restaurarRascunho = (draft) => {
+    if (!draft?.campos || !draft?.diasDados) return;
+    setCampos(draft.campos);
+    setDiasDados(draft.diasDados);
     setErro(null);
+  };
 
-    try {
-      const payload = { ...campos, dias: diasDados, tipoLayout: 'residencial' };
-      const blob = await gerarRdoPdf(payload);
-      baixarBlob(blob, `RDO_${campos.cliente}.pdf`);
-    } catch (err) {
-      setErro('Erro ao gerar o PDF. Verifique o servidor.');
-    } finally {
-      setCarregando(false);
-    }
+  const limparFormulario = () => {
+    setCampos(CAMPOS_INICIAIS);
+    setDiasDados([]);
+    setErro(null);
   };
 
   return {
     campos,
     diasDados,
-    carregando,
     erro,
     handleCampoChange,
     handleDiaChange,
@@ -210,6 +116,7 @@ export function useRdoForm() {
     removerAtividade,
     handleImageUpload,
     removerImagem,
-    handleSubmit,
+    restaurarRascunho,
+    limparFormulario,
   };
 }
